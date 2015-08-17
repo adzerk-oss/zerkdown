@@ -1,5 +1,4 @@
-
-<S>                     = MAP
+<S>                     = BLOCKS
 
 BLOCKS                  = (<BLANK-LINE> | BLOCK)+
 <BLOCK>                 = TEXT-BLOCK | TAGGED-BLOCK
