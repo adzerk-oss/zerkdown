@@ -1,9 +1,11 @@
 (set-env!
-  :dependencies '[[org.clojure/clojure       "1.7.0"          :scope "provided"]
-                  [tailrecursion/hoplon      "6.0.0-alpha5"   :scope "test"]
-                  [tailrecursion/boot-hoplon "0.1.1"          :scope "test"]
-                  [adzerk/bootlaces          "0.1.10"         :scope "test"]]
-  :repositories #(conj % '["sonatype" {:url "http://oss.sonatype.org/content/repositories/releases"}]))
+  :resource-paths #{"src"}
+  :source-paths   #{"test"}
+  :dependencies   '[[org.clojure/clojure       "1.7.0"          :scope "provided"]
+                    [tailrecursion/hoplon      "6.0.0-alpha5"   :scope "test"]
+                    [tailrecursion/boot-hoplon "0.1.1"          :scope "test"]
+                    [adzerk/bootlaces          "0.1.10"         :scope "test"]]
+  :repositories   #(conj % '["sonatype" {:url "http://oss.sonatype.org/content/repositories/releases"}]))
 
 (require
   '[clojure.java.io :as io]

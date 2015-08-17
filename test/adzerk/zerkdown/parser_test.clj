@@ -109,4 +109,4 @@
               [:TAGGED-BLOCK ["##" "[bar]"]
                "some more\ntagged blocks\n"]
               "and finally the\nend of the text\n"]
-             (parse (slurp "test/block1.zd")))))))
+             (parse (slurp (io/resource "adzerk/zerkdown/parser_test/block1.zd"))))))))
