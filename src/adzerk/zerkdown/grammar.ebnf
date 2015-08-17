@@ -1,0 +1,74 @@
+
+<S>                     = MAP
+
+BLOCKS                  = (<BLANK-LINE> | BLOCK)+
+<BLOCK>                 = TEXT-BLOCK | TAGGED-BLOCK
+
+TEXT-BLOCK              = TEXT-BLOCK-LINE+
+<TEXT-BLOCK-LINE>       = (!TAGGED-BLOCK-TAG LINE | <BLANK-LINE>)+
+
+TAGGED-BLOCK            = !ESCAPED-CHAR TAGGED-BLOCK-TAG TAGGED-BLOCK-BODY
+TAGGED-BLOCK-TAG        = TAGGED-BLOCK-TAG-IN CLJ?
+TAGGED-BLOCK-BODY       = TAGGED-BODY-START INDENTED-LINE*
+<TAGGED-BODY-START>     = <EOL> | <SP>+ <EOL> | <SP>+ NONBLANK-LINE
+
+<INDENTED-LINE>         = BLANK-LINE | <INDENT> NONBLANK-LINE
+<INDENT>                = SP SP
+
+LINE                    = BLANK-LINE | NONBLANK-LINE
+NONBLANK-LINE           = !BLANK-LINE LINE-CHAR+ EOL
+BLANK-LINE              = SP* EOL
+<SP>                    = " "
+<EOL>                   = "\n"
+<LINE-CHAR>             = !EOL ANY-CHAR
+
+CLJ                     = MAP | VEC
+
+MAP                     = LCB (MAP | STRING | MAP-CHAR)* RCB
+<LCB>                   = '{'
+<RCB>                   = '}'
+<MAP-CHAR>              = !(LCB | RCB | DQ) ANY-CHAR
+
+VEC                     = LSB (VEC | STRING | VEC-CHAR)* RSB
+<LSB>                   = '['
+<RSB>                   = ']'
+<VEC-CHAR>              = !(LSB | RSB | DQ) ANY-CHAR
+
+STRING                  = DQ (STRING-CHAR | ESCAPED-CHAR)* DQ
+<DQ>                    = '"'
+<STRING-CHAR>           = !(ESCAPE-CHAR | DQ) ANY-CHAR
+
+<ANY-CHAR>              = #"."
+<ESCAPE-CHAR>           = "\\"
+<ESCAPED-CHAR>          = ESCAPE-CHAR ANY-CHAR
+
+(*
+
+<SP>           = " "
+<WS>           = EOL | SP
+
+INDENT         = SP SP
+
+file = (line <eol>)* line
+line = (field <','>)* field
+eol = '\r'? '\n'
+<field> = plain-field | quoted-field
+quoted-field = <'\"'> (#'[^"\\]+' | escaped-char)* <'\"'>
+plain-field = (field-chars | escaped-char)*
+<field-chars> = #'[^\\\r\n,\"]+'
+escaped-char = #'\\.'
+
+
+ATOM       = ATOMCHAR+
+<ATOMCHAR> = !PUNCT #"."
+
+<LIST>     = LIST1 | LIST2
+LP1        = '('
+RP1        = ')'
+LP2        = '['
+RP2        = ']'
+LIST1      = <LP1> S? <RP1>
+LIST2      = <LP2> S? <RP2>
+PUNCT      = SP | LP1 | RP1 | LP2 | RP2GGEGGE
+
+*)
