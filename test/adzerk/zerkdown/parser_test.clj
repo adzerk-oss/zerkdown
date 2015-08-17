@@ -1,4 +1,4 @@
-(ns adzerk.zerkdown.test
+(ns adzerk.zerkdown.parser-test
   (:require
     [clojure.java.io        :as io]
     [adzerk.zerkdown.parser :as parser :refer :all :reload true]
