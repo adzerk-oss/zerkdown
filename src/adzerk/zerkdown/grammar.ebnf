@@ -41,34 +41,3 @@ STRING                  = DQ (STRING-CHAR | ESCAPED-CHAR)* DQ
 <ANY-CHAR>              = #"."
 <ESCAPE-CHAR>           = "\\"
 <ESCAPED-CHAR>          = ESCAPE-CHAR ANY-CHAR
-
-(*
-
-<SP>           = " "
-<WS>           = EOL | SP
-
-INDENT         = SP SP
-
-file = (line <eol>)* line
-line = (field <','>)* field
-eol = '\r'? '\n'
-<field> = plain-field | quoted-field
-quoted-field = <'\"'> (#'[^"\\]+' | escaped-char)* <'\"'>
-plain-field = (field-chars | escaped-char)*
-<field-chars> = #'[^\\\r\n,\"]+'
-escaped-char = #'\\.'
-
-
-ATOM       = ATOMCHAR+
-<ATOMCHAR> = !PUNCT #"."
-
-<LIST>     = LIST1 | LIST2
-LP1        = '('
-RP1        = ')'
-LP2        = '['
-RP2        = ']'
-LIST1      = <LP1> S? <RP1>
-LIST2      = <LP2> S? <RP2>
-PUNCT      = SP | LP1 | RP1 | LP2 | RP2GGEGGE
-
-*)
