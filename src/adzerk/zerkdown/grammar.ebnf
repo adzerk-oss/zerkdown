@@ -22,20 +22,19 @@ BLANK-LINE              = SP* EOL
 <LINE-CHAR>             = !EOL ANY-CHAR
 
 CLJ                     = MAP | VEC
-
-MAP                     = LCB (MAP | STRING | MAP-CHAR)* RCB
-<LCB>                   = '{'
-<RCB>                   = '}'
-<MAP-CHAR>              = !(LCB | RCB | DQ) ANY-CHAR
-
-VEC                     = LSB (VEC | STRING | VEC-CHAR)* RSB
-<LSB>                   = '['
-<RSB>                   = ']'
-<VEC-CHAR>              = !(LSB | RSB | DQ) ANY-CHAR
+MAP                     = LCB (VEC | MAP | STRING | NON-PUNCT)* RCB
+VEC                     = LSB (VEC | MAP | STRING | NON-PUNCT)* RSB
 
 STRING                  = DQ (STRING-CHAR | ESCAPED-CHAR)* DQ
-<DQ>                    = '"'
 <STRING-CHAR>           = !(ESCAPE-CHAR | DQ) ANY-CHAR
+
+<NON-PUNCT>             = !PUNCT ANY-CHAR
+<PUNCT>                 = DQ | LSB | RSB | LCB | RCB
+<LSB>                   = '['
+<RSB>                   = ']'
+<LCB>                   = '{'
+<RCB>                   = '}'
+<DQ>                    = '"'
 
 <ANY-CHAR>              = #"."
 <ESCAPE-CHAR>           = "\\"

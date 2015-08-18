@@ -49,7 +49,9 @@
         empty   "[]"
         simple  "[:foo 100]"
         vec-str "[\"f[oo\" 100]"
-        nested  "[[:foo 100] \"200\"]"]
+        nested  "[[:foo 100] \"200\"]"
+        nonsym  "[this#isn't^a/valid.clojure\\symbol]"
+        fail1   "[}]"]
     (testing "empty vec"
       (is (= empty (parse empty))))
     (testing "simple vec"
@@ -57,16 +59,20 @@
     (testing "containing strings with '[' in them"
       (is (= vec-str (parse vec-str))))
     (testing "containing nested vecs"
-      (is (= nested (parse nested))))))
+      (is (= nested (parse nested))))
+    (testing "containing atom that isn't parseable as clojure data"
+      (is (= nonsym (parse nonsym))))
+    (testing "unbalanced curlies in vec"
+      (is (failure? (parse fail1))))))
 
 (deftest clojure-coll
   (let [parse (parser-of :CLJ)
         coll  "[foo bar {:baz 200}]"
-        err   "[foo ] bar]"]
+        fail1 "[foo ] bar]"]
     (testing "clojure collection"
       (is (= coll (parse coll))))
     (testing "invalid clj collection"
-      (is (= instaparse.gll.Failure (type (parse err)))))))
+      (is (failure? (parse fail1))))))
 
 (deftest line
   (let [parse  (parser-of :LINE)
