@@ -5,13 +5,16 @@
     [clojure.test           :as ctest  :refer [deftest is testing run-tests]]))
 
 (def parser-of (partial make-parser ["#" "##"]))
+(defn failure? [x] (= instaparse.gll.Failure (type x)))
+(defn resource [x] (->> x (str "adzerk/zerkdown/parser_test/") io/resource slurp))
 
 (deftest parse-strings
   (let [parse  (parser-of :STRING)
         empty  "\"\""
         no-esc "\"asdf\""
         esc-dq "\"asdf\\\"qwer\""
-        esc-cs "\"asdf\\tfoo\\\\qwer\""]
+        esc-cs "\"asdf\\tfoo\\\\qwer\""
+        fail1  "\"asdf\\\""]
     (testing "empty string"
       (is (= empty (parse empty))))
     (testing "no escaped chars"
@@ -19,14 +22,17 @@
     (testing "escaped double quotes"
       (is (= esc-dq (parse esc-dq))))
     (testing "other escaped chars"
-      (is (= esc-cs (parse esc-cs))))))
+      (is (= esc-cs (parse esc-cs))))
+    (testing "unbalanced escaped double quote"
+      (is (failure? (parse fail1))))))
 
 (deftest parse-maps
   (let [parse   (parser-of :MAP)
         empty   "{}"
         simple  "{:foo 100}"
         map-str "{\"f{oo\" :bar}"
-        nested  "{{:foo 100} \"200\"}"]
+        nested  "{{:foo 100} \"200\"}"
+        fail1   "{{:foo 100} \"200}\""]
     (testing "empty map"
       (is (= empty (parse empty))))
     (testing "simple map"
@@ -34,7 +40,9 @@
     (testing "containing strings with '{' in them"
       (is (= map-str (parse map-str))))
     (testing "containing nested maps"
-      (is (= nested (parse nested))))))
+      (is (= nested (parse nested))))
+    (testing "unbalanced curlies with curly in string"
+      (is (failure? (parse fail1))))))
 
 (deftest parse-vecs
   (let [parse   (parser-of :VEC)
@@ -53,9 +61,12 @@
 
 (deftest clojure-coll
   (let [parse (parser-of :CLJ)
-        coll  "[foo bar {:baz 200}]"]
+        coll  "[foo bar {:baz 200}]"
+        err   "[foo ] bar]"]
     (testing "clojure collection"
-      (is (= coll (parse coll))))))
+      (is (= coll (parse coll))))
+    (testing "invalid clj collection"
+      (is (= instaparse.gll.Failure (type (parse err)))))))
 
 (deftest line
   (let [parse  (parser-of :LINE)
@@ -78,35 +89,25 @@
     (testing "simple indented line"
       (is (= (list (subs simple 2)) (parse simple))))))
 
-(deftest block
-  (let [parse (parser-of :TAGGED-BLOCK)
-        test1 "##[:foo 100] heyo  \n     qwer\n\n  foo\n  bar\n"
-        test2 "## heyo  \n     qwer\n\n  foo\n  bar\n"
-        test3 "##\n  heyo  \n     qwer\n\n  foo\n  bar\n"]
-    (testing "parse block with clj"
-      (is (= [:TAGGED-BLOCK
-              ["##" "[:foo 100]"]
-              "heyo  \n   qwer\n\nfoo\nbar\n"]
-             (parse test1))))
-    (testing ""
-      (is (= [:TAGGED-BLOCK
-              ["##"]
-              "heyo  \n   qwer\n\nfoo\nbar\n"]
-             (parse test2))))
-    (testing ""
-      (is (= [:TAGGED-BLOCK
-              ["##"]
-              "heyo  \n   qwer\n\nfoo\nbar\n"]
-             (parse test3))))))
-
 (deftest blocks
   (let [parse (parser-of :BLOCKS)]
     (testing "blockes, tagged and text"
       (is (= [[:TAGGED-BLOCK
                ["#" "[foo]"]
-               "asdf\nqwer asdf zxcv\nfoop de doop\n\n"]
-              "this is a block\nof plain text\nyou see\n"
-              [:TAGGED-BLOCK ["##" "[bar]"]
-               "some more\ntagged blocks\n"]
+               ["asdf qwer asdf\nzxcv foop de doop\n"]]
+              "this is a block of\nplain text, you see\n"
+              [:TAGGED-BLOCK
+               ["##" "[bar]"]
+               ["a one liner\n"]]
               "and finally the\nend of the text\n"]
-             (parse (slurp (io/resource "adzerk/zerkdown/parser_test/block1.zd"))))))))
+             (parse (resource "block1.zd")))))
+    (testing "nested blocks"
+      (is (= [[:TAGGED-BLOCK
+               ["#"]
+               ["This Is A Block\n"
+                [:TAGGED-BLOCK
+                 ["#"]
+                 ["That contains\na nested block,\n"]]
+                "and then contin-\nues like this for\na while...\n"]]
+              "and finally ends\nwith a block of\nnormal, regular text.\n"]
+             (parse (resource "block2.zd")))))))

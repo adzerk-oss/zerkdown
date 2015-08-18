@@ -24,8 +24,7 @@
 
 (defn make-block-tag-rule
   [strings]
-  {:TAGGED-BLOCK-TAG-IN
-   {:tag :alt :parsers (map #(hash-map :tag :string :string %) strings)}})
+  {:TAGGED-BLOCK-TAG-IN (apply combi/alt (map combi/string strings))})
 
 (defn make-rules
   [block-tags]
@@ -35,13 +34,25 @@
   [s]
   (str s "\n"))
 
-(def make-parser
-  (memoize
-    (fn [block-tags start-rule]
-      (comp (partial insta/transform transform-map)
-            (insta/parser (make-rules block-tags) :start start-rule)))))
+(defn make-transform
+  [m]
+  (partial insta/transform m))
 
-#_(defn parse-blocks
-  [block-tags input]
-  (let [parse (make-parser block-tags :BLOCKS)]
-    ))
+(defn fuse-text-blocks
+  [blocks]
+  (if-not (vector? blocks)
+    blocks
+    (-> #(if-not (every? string? [(peek %1) %2])
+           (conj %1 %2)
+           (conj (pop %1) (str (peek %1) %2)))
+        (reduce [] blocks))))
+
+(defn make-parser
+  [block-tags start-rule]
+  (let [a (atom nil)
+        r (make-rules block-tags)]
+    (reset! a (comp fuse-text-blocks
+                    (->> #(vector :TAGGED-BLOCK %1 (@a %2))
+                         (assoc transform-map :TAGGED-BLOCK)
+                         (partial insta/transform))
+                    (insta/parser (make-rules block-tags) :start start-rule)))))
