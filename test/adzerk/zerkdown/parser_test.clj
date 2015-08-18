@@ -105,7 +105,7 @@
               [:TAGGED-BLOCK
                ["##" "[bar]"]
                ["a one liner\n"]]
-              "and finally the\nend of the text\n"]
+              "\\# and finally the\nend of the text!\n"]
              (parse (resource "block1.zd")))))
     (testing "nested blocks"
       (is (= [[:TAGGED-BLOCK

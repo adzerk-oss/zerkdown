@@ -6,7 +6,7 @@ BLOCKS                  = (<BLANK-LINE> | BLOCK)+
 TEXT-BLOCK              = TEXT-BLOCK-LINE+
 <TEXT-BLOCK-LINE>       = (!TAGGED-BLOCK-TAG LINE | <BLANK-LINE>)+
 
-TAGGED-BLOCK            = !ESCAPED-CHAR TAGGED-BLOCK-TAG TAGGED-BLOCK-BODY
+TAGGED-BLOCK            = !ESCAPED TAGGED-BLOCK-TAG TAGGED-BLOCK-BODY
 TAGGED-BLOCK-TAG        = TAGGED-BLOCK-TAG-IN CLJ?
 TAGGED-BLOCK-BODY       = TAGGED-BODY-START INDENTED-LINE*
 <TAGGED-BODY-START>     = <EOL> | <SP>+ <EOL> | <SP>+ NONBLANK-LINE
@@ -17,25 +17,26 @@ TAGGED-BLOCK-BODY       = TAGGED-BODY-START INDENTED-LINE*
 LINE                    = BLANK-LINE | NONBLANK-LINE
 NONBLANK-LINE           = !BLANK-LINE LINE-CHAR+ EOL
 BLANK-LINE              = SP* EOL
-<SP>                    = " "
-<EOL>                   = "\n"
-<LINE-CHAR>             = !EOL ANY-CHAR
+<LINE-CHAR>             = !EOL ANY
 
 CLJ                     = MAP | VEC
 MAP                     = LCB (VEC | MAP | STRING | NON-PUNCT)* RCB
 VEC                     = LSB (VEC | MAP | STRING | NON-PUNCT)* RSB
 
-STRING                  = DQ (STRING-CHAR | ESCAPED-CHAR)* DQ
-<STRING-CHAR>           = !(ESCAPE-CHAR | DQ) ANY-CHAR
+STRING                  = DQ (STRING-CHAR | ESCAPED)* DQ
+<STRING-CHAR>           = !(ESC | DQ) ANY
 
-<NON-PUNCT>             = !PUNCT ANY-CHAR
+<NON-PUNCT>             = !PUNCT ANY
 <PUNCT>                 = DQ | LSB | RSB | LCB | RCB
+
+<ESCAPED>               = ESC ANY
+
+<SP>                    = " "
+<EOL>                   = "\n"
 <LSB>                   = '['
 <RSB>                   = ']'
 <LCB>                   = '{'
 <RCB>                   = '}'
 <DQ>                    = '"'
-
-<ANY-CHAR>              = #"."
-<ESCAPE-CHAR>           = "\\"
-<ESCAPED-CHAR>          = ESCAPE-CHAR ANY-CHAR
+<ESC>                   = "\\"
+<ANY>                   = #"."
