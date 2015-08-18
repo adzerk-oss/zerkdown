@@ -45,12 +45,16 @@
                 :PRE-BLOCK-TAG-IN (apply alt (map string pre-block-tags))
                 :INDENT           (hide-tag (apply cat (repeat indent (nt :SP))))}))
 
+(defmacro with-delayed-body
+  [[binding] & body]
+  `(let [a# (atom nil) ~binding a#] (reset! a# (do ~@body))))
+
 (defn make-parser
   [block-tags pre-block-tags indent start-rule]
-  (let [a (atom nil)
-        r (make-rules block-tags pre-block-tags indent)]
-    (reset! a (comp concat-text
-                    (->> #(vector :BLOCK %1 (@a %2))
-                         (assoc transform-map :BLOCK)
-                         (partial insta/transform))
-                    (insta/parser r :start start-rule)))))
+  (let [r (make-rules block-tags pre-block-tags indent)]
+    (with-delayed-body [a]
+      (comp concat-text
+            (->> #(vector :BLOCK %1 (@a %2))
+                 (assoc transform-map :BLOCK)
+                 (partial insta/transform))
+            (insta/parser r :start start-rule)))))
