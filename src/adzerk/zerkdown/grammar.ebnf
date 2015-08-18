@@ -1,35 +1,45 @@
 <S>                     = BLOCKS
 
-BLOCKS                  = (<BLANK-LINE> | BLOCK)+
-<BLOCK>                 = TEXT-BLOCK | TAGGED-BLOCK
+BLOCKS                  = (<BLANK-LINE> | TEXT | BLOCK | PRE-BLOCK)+
 
-TEXT-BLOCK              = TEXT-BLOCK-LINE+
-<TEXT-BLOCK-LINE>       = (!TAGGED-BLOCK-TAG LINE | <BLANK-LINE>)+
+TEXT                    = TEXT-LINE+
+<TEXT-LINE>             = (!(BLOCK | PRE-BLOCK) LINE)+
 
-TAGGED-BLOCK            = !ESCAPED TAGGED-BLOCK-TAG TAGGED-BLOCK-BODY
-TAGGED-BLOCK-TAG        = TAGGED-BLOCK-TAG-IN CLJ?
-TAGGED-BLOCK-BODY       = TAGGED-BODY-START INDENTED-LINE*
-<TAGGED-BODY-START>     = <EOL> | <SP>+ <EOL> | <SP>+ NONBLANK-LINE
+PRE-BLOCK               = PRE-BLOCK-TAG PRE-BLOCK-BODY
+PRE-BLOCK-TAG           = PRE-BLOCK-TAG-IN DATA?
+PRE-BLOCK-BODY          = PRE-BLOCK-BODY-START INDENTED-PRE-LINE+
+<PRE-BLOCK-BODY-START>  = <BLANK-LINE> | <SP>+ NONBLANK-PRE-LINE
+
+BLOCK                   = BLOCK-TAG BLOCK-BODY
+BLOCK-TAG               = BLOCK-TAG-IN DATA?
+BLOCK-BODY              = BLOCK-BODY-START INDENTED-LINE*
+<BLOCK-BODY-START>      = <BLANK-LINE> | <SP>+ NONBLANK-LINE
+
+<INDENTED-PRE-LINE>     = BLANK-LINE | <INDENT> NONBLANK-PRE-LINE
+PRE-LINE                = BLANK-LINE | NONBLANK-PRE-LINE
+NONBLANK-PRE-LINE       = !BLANK-LINE PRE-LINE-CHAR+ EOL
 
 <INDENTED-LINE>         = BLANK-LINE | <INDENT> NONBLANK-LINE
-<INDENT>                = SP SP
-
 LINE                    = BLANK-LINE | NONBLANK-LINE
 NONBLANK-LINE           = !BLANK-LINE LINE-CHAR+ EOL
+
 BLANK-LINE              = SP* EOL
-<LINE-CHAR>             = !EOL ANY
 
-CLJ                     = MAP | VEC
-MAP                     = LCB (VEC | MAP | STRING | NON-PUNCT)* RCB
-VEC                     = LSB (VEC | MAP | STRING | NON-PUNCT)* RSB
+DATA                    = MAP | VEC | LIST | STRING
+MAP                     = LCB (DATA | DATA-CHAR)* RCB
+VEC                     = LSB (DATA | DATA-CHAR)* RSB
+LIST                    = LP  (DATA | DATA-CHAR)* RP
+STRING                  = DQ STRING-CHAR* DQ
 
-STRING                  = DQ (STRING-CHAR | ESCAPED)* DQ
-<STRING-CHAR>           = !(ESC | DQ) ANY
+<DATA-CHAR>             = !(ESC | DATA-DELIM) ANY | ESCAPED-PRE
+<STRING-CHAR>           = !(ESC | DQ)         ANY | ESCAPED-PRE
+<PRE-LINE-CHAR>         = !(ESC | EOL)        ANY | ESCAPED-PRE
+<LINE-CHAR>             = !(ESC | EOL)        ANY | ESCAPED
 
-<NON-PUNCT>             = !PUNCT ANY
-<PUNCT>                 = DQ | LSB | RSB | LCB | RCB
+<DATA-DELIM>            = ESC | DQ | LSB | RSB | LCB | RCB | LP | RP
 
-<ESCAPED>               = ESC ANY
+<ESCAPED-PRE>           = ESC ANY
+<ESCAPED>               = <ESC> ANY
 
 <SP>                    = " "
 <EOL>                   = "\n"
@@ -37,6 +47,8 @@ STRING                  = DQ (STRING-CHAR | ESCAPED)* DQ
 <RSB>                   = ']'
 <LCB>                   = '{'
 <RCB>                   = '}'
+<LP>                    = '('
+<RP>                    = ')'
 <DQ>                    = '"'
 <ESC>                   = "\\"
 <ANY>                   = #"."

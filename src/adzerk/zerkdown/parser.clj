@@ -1,44 +1,36 @@
 (ns adzerk.zerkdown.parser
+  (:refer-clojure :exclude [cat])
   (:require
     [clojure.java.io        :as io]
     [clojure.string         :as string]
     [instaparse.core        :as insta]
-    [instaparse.combinators :as combi]))
+    [instaparse.combinators :as combi :refer [string cat alt ebnf nt hide-tag]]))
 
 (def grammar "adzerk/zerkdown/grammar.ebnf")
-(def rules   (->> grammar io/resource slurp combi/ebnf))
+(def rules   (->> grammar io/resource slurp ebnf))
 
 (def transform-map
-  {:STRING                    str
-   :MAP                       str
-   :VEC                       str
-   :LINE                      str
-   :BLANK-LINE                str
-   :NONBLANK-LINE             str
-   :TAGGED-BLOCK-TAG-IN       str
-   :CLJ                       str
-   :TAGGED-BLOCK-TAG          vector
-   :TAGGED-BLOCK-BODY         str
-   :TEXT-BLOCK                str
-   :BLOCKS                    vector})
+  {:STRING                      str
+   :MAP                         str
+   :VEC                         str
+   :LIST                        str
+   :LINE                        str
+   :PRE-LINE                    str
+   :BLANK-LINE                  str
+   :NONBLANK-LINE               str
+   :NONBLANK-PRE-LINE           str
+   :BLOCK-TAG-IN                str
+   :PRE-BLOCK-TAG-IN            str
+   :DATA                        str
+   :BLOCK-TAG                   vector
+   :PRE-BLOCK-TAG               vector
+   :BLOCK-BODY                  str
+   :PRE-BLOCK-BODY              str
+   :TEXT                        str
+   :BLOCKS                      vector
+   :PRE-BLOCK                   #(vector :BLOCK %1 [%2])})
 
-(defn make-block-tag-rule
-  [strings]
-  {:TAGGED-BLOCK-TAG-IN (apply combi/alt (map combi/string strings))})
-
-(defn make-rules
-  [block-tags]
-  (merge rules (make-block-tag-rule block-tags)))
-
-(defn prep-input
-  [s]
-  (str s "\n"))
-
-(defn make-transform
-  [m]
-  (partial insta/transform m))
-
-(defn fuse-text-blocks
+(defn concat-text
   [blocks]
   (if-not (vector? blocks)
     blocks
@@ -47,12 +39,18 @@
            (conj (pop %1) (str (peek %1) %2)))
         (reduce [] blocks))))
 
+(defn make-rules
+  [block-tags pre-block-tags indent]
+  (merge rules {:BLOCK-TAG-IN     (apply alt (map string block-tags))
+                :PRE-BLOCK-TAG-IN (apply alt (map string pre-block-tags))
+                :INDENT           (hide-tag (apply cat (repeat indent (nt :SP))))}))
+
 (defn make-parser
-  [block-tags start-rule]
+  [block-tags pre-block-tags indent start-rule]
   (let [a (atom nil)
-        r (make-rules block-tags)]
-    (reset! a (comp fuse-text-blocks
-                    (->> #(vector :TAGGED-BLOCK %1 (@a %2))
-                         (assoc transform-map :TAGGED-BLOCK)
+        r (make-rules block-tags pre-block-tags indent)]
+    (reset! a (comp concat-text
+                    (->> #(vector :BLOCK %1 (@a %2))
+                         (assoc transform-map :BLOCK)
                          (partial insta/transform))
-                    (insta/parser (make-rules block-tags) :start start-rule)))))
+                    (insta/parser r :start start-rule)))))

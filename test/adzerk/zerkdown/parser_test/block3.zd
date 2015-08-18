@@ -1,0 +1,11 @@
+% this is a pre-
+  formatted kind
+  of block...
+
+  # this won't be
+    parsed as a
+    nested block
+
+  does it work?
+  backslash doesn't
+  \esc\ape here.

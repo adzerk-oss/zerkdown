@@ -4,9 +4,13 @@
     [adzerk.zerkdown.parser :as parser :refer :all :reload true]
     [clojure.test           :as ctest  :refer [deftest is testing run-tests]]))
 
-(def parser-of (partial make-parser ["#" "##"]))
-(defn failure? [x] (= instaparse.gll.Failure (type x)))
-(defn resource [x] (->> x (str "adzerk/zerkdown/parser_test/") io/resource slurp))
+(def BLOCK-TAGS     ["#" "##"])
+(def PRE-BLOCK-TAGS ["%" "%%"])
+(def INDENT         2)
+
+(defn parser-of [x] (make-parser BLOCK-TAGS PRE-BLOCK-TAGS INDENT x))
+(defn failure?  [x] (= instaparse.gll.Failure (type x)))
+(defn resource  [x] (->> x (str "adzerk/zerkdown/parser_test/") io/resource slurp))
 
 (deftest parse-strings
   (let [parse  (parser-of :STRING)
@@ -51,6 +55,7 @@
         vec-str "[\"f[oo\" 100]"
         nested  "[[:foo 100] \"200\"]"
         nonsym  "[this#isn't^a/valid.clojure\\symbol]"
+        escaped "[\\}]"
         fail1   "[}]"]
     (testing "empty vec"
       (is (= empty (parse empty))))
@@ -62,17 +67,22 @@
       (is (= nested (parse nested))))
     (testing "containing atom that isn't parseable as clojure data"
       (is (= nonsym (parse nonsym))))
+    (testing "escaped unbalanced curly in vec"
+      (is (= escaped (parse escaped))))
     (testing "unbalanced curlies in vec"
       (is (failure? (parse fail1))))))
 
 (deftest clojure-coll
-  (let [parse (parser-of :CLJ)
-        coll  "[foo bar {:baz 200}]"
-        fail1 "[foo ] bar]"]
-    (testing "clojure collection"
+  (let [parse (parser-of :DATA)
+        coll  "[foo (bar {:baz 200})]"
+        fail1 "[foo ] bar]"
+        fail2 "\\[foo bar]"]
+    (testing "valid data"
       (is (= coll (parse coll))))
-    (testing "invalid clj collection"
-      (is (failure? (parse fail1))))))
+    (testing "invalid data"
+      (is (failure? (parse fail1))))
+    (testing "escaped open brace"
+      (is (failure? (parse fail2))))))
 
 (deftest line
   (let [parse  (parser-of :LINE)
@@ -84,7 +94,7 @@
     (testing "simple line"
       (is (= simple (parse simple))))
     (testing "escaped newline"
-      (is (= esc (parse esc))))))
+      (is (= "fo]onbar\n" (parse esc))))))
 
 (deftest indented-line
   (let [parse  (parser-of :INDENTED-LINE)
@@ -98,22 +108,24 @@
 (deftest blocks
   (let [parse (parser-of :BLOCKS)]
     (testing "blockes, tagged and text"
-      (is (= [[:TAGGED-BLOCK
+      (is (= [[:BLOCK
                ["#" "[foo]"]
                ["asdf qwer asdf\nzxcv foop de doop\n"]]
               "this is a block of\nplain text, you see\n"
-              [:TAGGED-BLOCK
+              [:BLOCK
                ["##" "[bar]"]
                ["a one liner\n"]]
-              "\\# and finally the\nend of the text!\n"]
+              "# and finally the\nend of the text!\n"]
              (parse (resource "block1.zd")))))
     (testing "nested blocks"
-      (is (= [[:TAGGED-BLOCK
+      (is (= [[:BLOCK
                ["#"]
                ["This Is A Block\n"
-                [:TAGGED-BLOCK
+                [:BLOCK
                  ["#"]
                  ["That contains\na nested block,\n"]]
                 "and then contin-\nues like this for\na while...\n"]]
               "and finally ends\nwith a block of\nnormal, regular text.\n"]
              (parse (resource "block2.zd")))))))
+
+((parser-of :BLOCKS) (resource "block3.zd"))
