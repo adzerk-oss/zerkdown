@@ -7,6 +7,9 @@ plain text, you see
 
 ##[bar] a one liner
 
-\# and finally the
-end of the text!
+and finally some
+more plain text...
+\# and this is still
+regular text because
+the hash was escaped.
 

@@ -1,14 +1,18 @@
 (ns adzerk.zerkdown.parser-test
   (:require
     [clojure.java.io        :as io]
+    [clojure.pprint         :as pp     :refer :all]
     [adzerk.zerkdown.parser :as parser :refer :all :reload true]
     [clojure.test           :as ctest  :refer [deftest is testing run-tests]]))
 
-(def BLOCK-TAGS     ["#" "##"])
-(def PRE-BLOCK-TAGS ["%" "%%"])
-(def INDENT         2)
+(def BLOCK-TAGS      ["#" "##"])
+(def PRE-BLOCK-TAGS  ["%" "%%"])
+(def LIST-BLOCK-TAGS ["*" "**"])
+(def INDENT          2)
 
-(defn parser-of [x] (make-parser BLOCK-TAGS PRE-BLOCK-TAGS INDENT x))
+(def the-parser (make-parser BLOCK-TAGS PRE-BLOCK-TAGS LIST-BLOCK-TAGS INDENT))
+
+(defn parser-of [x] (make-parser BLOCK-TAGS PRE-BLOCK-TAGS LIST-BLOCK-TAGS INDENT x))
 (defn failure?  [x] (= instaparse.gll.Failure (type x)))
 (defn resource  [x] (->> x (str "adzerk/zerkdown/parser_test/") io/resource slurp))
 
@@ -115,7 +119,7 @@
               [:BLOCK
                ["##" "[bar]"]
                ["a one liner\n"]]
-              "# and finally the\nend of the text!\n"]
+              "and finally some\nmore plain text...\n# and this is still\nregular text because\nthe hash was escaped.\n"]
              (parse (resource "block1.zd")))))
     (testing "nested blocks"
       (is (= [[:BLOCK
@@ -128,4 +132,50 @@
               "and finally ends\nwith a block of\nnormal, regular text.\n"]
              (parse (resource "block2.zd")))))))
 
-((parser-of :BLOCKS) (resource "block3.zd"))
+(deftest list-blocks
+  (let [parse (parser-of :BLOCKS)]
+    (testing "list blocks"
+      (is (= [[:BLOCK
+               ["#"]
+               ["Foo Bar\n"]]
+              "This is some\ntext to see if\nthe damn thing\neven works...\n"
+              [:LIST
+               ["*"]
+               [[:BLOCK
+                 ["*" "[omfg]"]
+                 ["an unordered\nqith foo bar\n"
+                  [:BLOCK
+                   ["#"]
+                   ["a block nested \nin the list item\n"]]]]
+                [:BLOCK
+                 ["*" "[hey there]"]
+                 ["list with\n"]]
+                [:BLOCK
+                 ["*"]
+                 ["three items\n"]]]]
+              [:LIST
+               ["**"]
+               [[:BLOCK
+                 ["**"]
+                 ["asdf qwer\n"]]
+                [:BLOCK
+                 ["**"]
+                 ["zxcv ;lkj\n"]]]]
+              "And here is\nthe end of the\ntext, fuckit.\n"]
+             (parse (resource "block4.zd")))))))
+
+(the-parser :BLOCKS "# asdf\n  hi there <<![foo x[bar\\]](omg) ^[baz baf]^ qwerqwer>>\n\n")
+((make-inline-parser) "asdf ![foo^[bar]](omg) qwerqwer\n\n")
+
+
+[[:BLOCK
+  ["#"]
+  ["asdf\nhi there "
+   [:INLINE
+    ["![" "]" "(omg)"]
+    ["foo "
+     [:INLINE
+      ["^[" "]" nil]
+      ["bar"]]]]
+   " qwerqwer\n"]]]
+
