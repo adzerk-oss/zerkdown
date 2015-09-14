@@ -5,14 +5,21 @@
     [adzerk.zerkdown.parser :as parser :refer :all :reload true]
     [clojure.test           :as ctest  :refer [deftest is testing run-tests]]))
 
-(def BLOCK-TAGS      ["#" "##"])
-(def PRE-BLOCK-TAGS  ["%" "%%"])
-(def LIST-BLOCK-TAGS ["*" "**"])
-(def INDENT          2)
+(def INDENT 2)
 
-(def the-parser (make-parser BLOCK-TAGS PRE-BLOCK-TAGS LIST-BLOCK-TAGS INDENT))
+(def TAGS
+  {:block      ["#" "##"]
+   :pre-block  ["%" "%%"]
+   :list       ["*" "**"]
+   :inline     {"[" "]"
+                "*[" "]*"
+                "**[" "]**"}
+   :pre-inline {"`[" "]`"
+                "``[" "]``"}})
 
-(defn parser-of [x] (make-parser BLOCK-TAGS PRE-BLOCK-TAGS LIST-BLOCK-TAGS INDENT x))
+(def the-parser (make-parser INDENT TAGS))
+
+(defn parser-of [x] (partial the-parser x))
 (defn failure?  [x] (= instaparse.gll.Failure (type x)))
 (defn resource  [x] (->> x (str "adzerk/zerkdown/parser_test/") io/resource slurp))
 
@@ -111,7 +118,7 @@
 
 (deftest blocks
   (let [parse (parser-of :BLOCKS)]
-    (testing "blockes, tagged and text"
+    (testing "blocks, tagged and text"
       (is (= [[:BLOCK
                ["#" "[foo]"]
                ["asdf qwer asdf\nzxcv foop de doop\n"]]
@@ -120,7 +127,7 @@
                ["##" "[bar]"]
                ["a one liner\n"]]
               "and finally some\nmore plain text...\n# and this is still\nregular text because\nthe hash was escaped.\n"]
-             (parse (resource "block1.zd")))))
+             (the-parser :BLOCKS (resource "block1.zd")))))
     (testing "nested blocks"
       (is (= [[:BLOCK
                ["#"]
@@ -164,18 +171,30 @@
               "And here is\nthe end of the\ntext, fuckit.\n"]
              (parse (resource "block4.zd")))))))
 
-(the-parser :BLOCKS "# asdf\n  hi there <<![foo x[bar\\]](omg) ^[baz baf]^ qwerqwer>>\n\n")
-((make-inline-parser) "asdf ![foo^[bar]](omg) qwerqwer\n\n")
-
-
-[[:BLOCK
-  ["#"]
-  ["asdf\nhi there "
-   [:INLINE
-    ["![" "]" "(omg)"]
-    ["foo "
-     [:INLINE
-      ["^[" "]" nil]
-      ["bar"]]]]
-   " qwerqwer\n"]]]
-
+(deftest inline
+  (let [parse (parser-of :BLOCKS)]
+    (testing "inline"
+      (is (= ["Here is some text, text\nthat contains "
+              [:INLINE
+               ["[" "]" nil]
+               ["some inline\ntags"]]
+              " and whatnot.\nInline tags "
+              [:INLINE
+               ["[" "]" nil]
+               ["can "
+                [:INLINE
+                 ["[" "]" nil]
+                 ["be "
+                  [:INLINE
+                   ["[" "]" nil]
+                   ["nested"]]]]]]
+              "\nand "
+              [:INLINE
+               ["[" "]" "{attributes etc}"]
+               ["they can have"]]
+              "\nand inline tags "
+              [:INLINE
+               ["`[" "]`" nil]
+               ["can also be\nverbatim [this isn't an inline\ntag because it's in a preformatted\nsituation]"]]
+              ".\n"]
+             (parse (resource "inline1.zd")))))))

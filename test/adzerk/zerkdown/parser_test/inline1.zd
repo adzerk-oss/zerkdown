@@ -1,0 +1,10 @@
+Here is some text, text
+that contains [some inline
+tags] and whatnot.
+
+Inline tags [can [be [nested]]]
+and [they can have]{attributes etc}
+and inline tags `[can also be
+verbatim [this isn't an inline
+tag because it's in a preformatted
+situation]]`.

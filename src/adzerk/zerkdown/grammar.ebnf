@@ -1,23 +1,11 @@
 <S>                     = BLOCKS
 
-TEXT-BODY               = (NOT-INLINE | INLINE | EOL)*
+TEXT-BODY               = (PRE-INLINE / INLINE / ANY / EOL)+
 
-INLINE                  = I1 | I2 | I3
-
-<I1>                    = L1 (INLINE | INLINE-CHAR)* R1 INLINE-DATA
-<I2>                    = L2 (INLINE | INLINE-CHAR)* R2 INLINE-DATA
-<I3>                    = L3 (INLINE | INLINE-CHAR)* R3 INLINE-DATA
-<INLINE-CHAR>           = !(ESC | INLINE-DELIM) ANY | ESCAPED
-<INLINE-DELIM>          = ESC | L1 | R1 | L2 | R2 | L3 | R3
-<L1>                    = '^['
-<R1>                    = ']'
-<L2>                    = '!['
-<R2>                    = ']'
-<L3>                    = '<<'
-<R3>                    = '>>'
+<INLINE-CHAR>           = !(ESC | INLINE-DELIM) ANY | EOL | ESCAPED
 
 INLINE-DATA             = DATA?
-NOT-INLINE              = !INLINE ANY
+NOT-INLINE              = !INLINE (ANY | EOL)
 
 BLOCKS                  = (<BLANK-LINE> | TEXT | BLOCK | PRE-BLOCK | LIST-BLOCKS)+
 
