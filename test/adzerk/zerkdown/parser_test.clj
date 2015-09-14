@@ -17,7 +17,7 @@
    :pre-inline {"`[" "]`"
                 "``[" "]``"}})
 
-(def the-parser (make-parser INDENT TAGS))
+(def the-parser (parser INDENT TAGS))
 
 (defn parser-of [x] (partial the-parser x))
 (defn failure?  [x] (= instaparse.gll.Failure (type x)))

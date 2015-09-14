@@ -125,16 +125,18 @@
         (insta/parser rules :start :TEXT-BODY)
         (fn [& xs] (apply str xs))))
 
-(defn make-parser
+(defn parser
   [indent tags]
   (let [r (make-rules indent tags)]
     (with-delayed-body [this]
       (let [recur-this #(vector :BLOCK %1 (vec (mapcat splice (@this :BLOCKS %2))))]
-        (fn [start-rule* text]
-          (concat-text
-            (insta/transform
-              (merge transform-map {:BLOCK      recur-this
-                                    :LIST-BLOCK recur-this
-                                    :TEXT       (make-inline-parser r)
-                                    })
-              ((insta/parser r :start start-rule*) text))))))))
+        (fn parser*
+          ([text]
+           (parser* :BLOCKS text))
+          ([start-rule* text]
+             (concat-text
+               (insta/transform
+                 (merge transform-map {:BLOCK      recur-this
+                                       :LIST-BLOCK recur-this
+                                       :TEXT       (make-inline-parser r)})
+                 ((insta/parser r :start start-rule*) text)))))))))
